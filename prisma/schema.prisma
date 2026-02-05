@@ -1,0 +1,87 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Acesso e Perfis
+model User {
+  id       String   @id @default(uuid())
+  email    String   @unique
+  password String
+  name     String?
+  leagues  League[]
+}
+
+// 2. Gestão de Ligas
+model League {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  startDate   DateTime @default(now())
+  status      String   @default("DRAFT") // DRAFT (Rascunho), ACTIVE (Ativa), FINISHED (Finalizada)
+  
+  adminId     String
+  admin       User     @relation(fields: [adminId], references: [id])
+  
+  players     Player[]
+  teams       Team[]
+  matches     Match[]
+  
+  createdAt   DateTime @default(now())
+}
+
+// 3. Gestão de Participantes
+model Player {
+  id       String  @id @default(uuid())
+  name     String
+  nickname String?
+  level    String? // Iniciante, Intermediário, Avançado
+  
+  leagueId String
+  league   League  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  
+  teams    Team[]  @relation("PlayerTeams")
+}
+
+// 4. Duplas (Times)
+model Team {
+  id       String   @id @default(uuid())
+  name     String?  // Ex: "Dupla 1"
+  
+  leagueId String
+  league   League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  
+  players  Player[] @relation("PlayerTeams")
+  
+  matchesA Match[]  @relation("TeamA")
+  matchesB Match[]  @relation("TeamB")
+  wonMatches Match[] @relation("Winner")
+}
+
+// 5. Partidas e Chaveamento
+model Match {
+  id        String   @id @default(uuid())
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  
+  phase     String   // OITAVAS, QUARTAS, SEMI, FINAL
+  roundOrder Int     // Para ordenar visualmente
+  
+  teamAId   String?
+  teamBId   String?
+  teamA     Team?    @relation("TeamA", fields: [teamAId], references: [id])
+  teamB     Team?    @relation("TeamB", fields: [teamBId], references: [id])
+  
+  scoreA    Int      @default(0)
+  scoreB    Int      @default(0)
+  isFinished Boolean @default(false)
+  
+  winnerId  String?
+  winner    Team?    @relation("Winner", fields: [winnerId], references: [id])
+}
