@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,79 +7,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 1. Acesso e Perfis
 model User {
-  id       String   @id @default(uuid())
-  email    String   @unique
-  password String
-  name     String?
-  leagues  League[]
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String?
+  leagues   League[]
+  createdAt DateTime @default(now())
 }
 
-// 2. Gestão de Ligas
 model League {
-  id          String   @id @default(uuid())
+  id          String    @id @default(cuid())
   name        String
-  description String?
-  startDate   DateTime @default(now())
-  status      String   @default("DRAFT") // DRAFT (Rascunho), ACTIVE (Ativa), FINISHED (Finalizada)
-  
+  description String?   // Requisito 2.1
+  logo        String?   // Requisito 2.1 (URL da imagem)
+  startDate   DateTime? // Requisito 2.1
+  status      String    @default("DRAFT") // DRAFT, IN_PROGRESS, FINISHED
   adminId     String
-  admin       User     @relation(fields: [adminId], references: [id])
-  
+  admin       User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
   players     Player[]
   teams       Team[]
   matches     Match[]
-  
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 }
 
-// 3. Gestão de Participantes
 model Player {
-  id       String  @id @default(uuid())
+  id       String  @id @default(cuid())
   name     String
-  nickname String?
-  level    String? // Iniciante, Intermediário, Avançado
-  
+  nickname String? // Requisito 3.1
+  level    String? // iniciante, intermediário, avançado
   leagueId String
   league   League  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  
   teams    Team[]  @relation("PlayerTeams")
+  
+  // Estatísticas (Requisito 8.1)
+  wins     Int     @default(0)
+  losses   Int     @default(0)
+  gamesWon Int     @default(0)
 }
 
-// 4. Duplas (Times)
 model Team {
-  id       String   @id @default(uuid())
-  name     String?  // Ex: "Dupla 1"
-  
-  leagueId String
-  league   League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  
-  players  Player[] @relation("PlayerTeams")
-  
-  matchesA Match[]  @relation("TeamA")
-  matchesB Match[]  @relation("TeamB")
+  id        String   @id @default(cuid())
+  name      String
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  players   Player[] @relation("PlayerTeams")
+  matchesA  Match[]  @relation("TeamA")
+  matchesB  Match[]  @relation("TeamB")
   wonMatches Match[] @relation("Winner")
 }
 
-// 5. Partidas e Chaveamento
 model Match {
-  id        String   @id @default(uuid())
-  leagueId  String
-  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  
-  phase     String   // OITAVAS, QUARTAS, SEMI, FINAL
-  roundOrder Int     // Para ordenar visualmente
-  
-  teamAId   String?
-  teamBId   String?
-  teamA     Team?    @relation("TeamA", fields: [teamAId], references: [id])
-  teamB     Team?    @relation("TeamB", fields: [teamBId], references: [id])
-  
-  scoreA    Int      @default(0)
-  scoreB    Int      @default(0)
-  isFinished Boolean @default(false)
-  
-  winnerId  String?
-  winner    Team?    @relation("Winner", fields: [winnerId], references: [id])
+  id          String   @id @default(cuid())
+  leagueId    String
+  league      League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  round       Int      // 1=Final, 2=Semi, 3=Quartas...
+  position    Int
+  nextMatchId String?
+  nextMatch   Match?   @relation("NextMatch", fields: [nextMatchId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  prevMatches Match[]  @relation("NextMatch")
+  teamAId     String?
+  teamA       Team?    @relation("TeamA", fields: [teamAId], references: [id])
+  teamBId     String?
+  teamB       Team?    @relation("TeamB", fields: [teamBId], references: [id])
+  winnerId    String?
+  winner      Team?    @relation("Winner", fields: [winnerId], references: [id])
+  scoreA      Int?     @default(0)
+  scoreB      Int?     @default(0)
+  status      String   @default("PENDING") // PENDING, PLAYING, FINISHED
+  createdAt   DateTime @default(now())
 }
