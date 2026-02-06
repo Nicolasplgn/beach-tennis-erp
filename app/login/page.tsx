@@ -9,7 +9,8 @@ export default function LoginPage() {
           <div className="bg-indigo-600 p-3 rounded-xl text-white mb-4 shadow-lg shadow-indigo-100">
             <Trophy size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Bem-vindo</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Beach-App</h1>
+          <h2 className="text-1xl font-bold text-slate-600">Bem Vindo</h2>
           <p className="text-slate-500 text-sm">Organize seus torneios</p>
         </div>
 

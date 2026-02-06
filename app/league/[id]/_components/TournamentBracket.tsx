@@ -1,162 +1,158 @@
 'use client'
 
 import { updateScore } from "@/app/actions"
-import { Trophy } from "lucide-react"
+import { Trophy, CheckCircle, Edit3 } from "lucide-react"
 import { useState, useEffect } from "react"
 
 export default function TournamentBracket({ matches, isAdmin }: { matches: any[], isAdmin: boolean }) {
-  const [scores, setScores] = useState<Record<string, { scoreA: number, scoreB: number }>>({})
+  // Estado para armazenar os placares digitados antes de confirmar
+  const [localScores, setLocalScores] = useState<Record<string, { scoreA: number, scoreB: number }>>({})
+  // Estado para controlar quais jogos estão em modo de edição
+  const [editingMatches, setEditingMatches] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    const initial: Record<string, { scoreA: number, scoreB: number }> = {}
-    matches.forEach(m => {
-      initial[m.id] = { scoreA: m.scoreA || 0, scoreB: m.scoreB || 0 }
+    const initialScores: Record<string, { scoreA: number, scoreB: number }> = {}
+    matches.forEach(match => {
+      initialScores[match.id] = { 
+        scoreA: match.scoreA ?? 0, 
+        scoreB: match.scoreB ?? 0 
+      }
     })
-    setScores(initial)
+    setLocalScores(initialScores)
   }, [matches])
 
-  const rounds = matches.reduce((acc: any, m) => {
-    if (!acc[m.round]) acc[m.round] = []
-    acc[m.round].push(m)
+  const knockoutMatches = matches.filter(match => match.type === 'KNOCKOUT')
+  
+  if (knockoutMatches.length === 0) {
+    return <div className="text-white p-10 font-bold text-center w-full uppercase tracking-widest opacity-20">Nenhum jogo de mata-mata disponível.</div>
+  }
+
+  const rounds = knockoutMatches.reduce((acc: any, match) => {
+    if (!acc[match.round]) acc[match.round] = []
+    acc[match.round].push(match)
     return acc
   }, {})
 
-  // --- CORREÇÃO AQUI ---
-  // Antes estava b - a (Decrescente). Agora mudamos para a - b (Crescente).
-  // Round 1 (Muitos jogos) fica na Esquerda. Round Maior (Final) fica na Direita.
   const roundKeys = Object.keys(rounds).sort((a, b) => Number(a) - Number(b))
 
-  const handleBlur = async (matchId: string, scoreA: number, scoreB: number) => {
-    await updateScore(matchId, scoreA, scoreB)
-  }
-
-  const handleChange = (matchId: string, field: 'scoreA' | 'scoreB', value: string) => {
-    const num = parseInt(value) || 0
-    setScores(prev => ({
+  const handleInputChange = (matchId: string, field: 'scoreA' | 'scoreB', value: string) => {
+    const numericValue = parseInt(value) || 0
+    setLocalScores(prev => ({
       ...prev,
       [matchId]: {
-        scoreA: field === 'scoreA' ? num : (prev[matchId]?.scoreA || 0),
-        scoreB: field === 'scoreB' ? num : (prev[matchId]?.scoreB || 0)
+        ...prev[matchId],
+        [field]: numericValue
       }
     }))
   }
 
-  return (
-    <div className="w-full h-full overflow-x-auto pb-12 pt-12 px-8 custom-scrollbar-dark flex justify-start lg:justify-center">
-      <div className="flex gap-16 items-center">
-        {roundKeys.map((round, index) => {
-          // A última rodada do array é a Final
-          const isFinal = index === roundKeys.length - 1
-          const roundMatches = rounds[round].sort((a: any, b: any) => a.position - b.position)
-          
-          return (
-            <div key={round} className="flex flex-col justify-center space-y-10 relative h-full">
-              {/* Título da Rodada */}
-              <div className="absolute -top-10 left-0 w-full text-center">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                  {isFinal ? '🏆 Grande Final' : `Rodada ${round}`}
-                </span>
-              </div>
+  const handleConfirmResult = async (matchId: string) => {
+    const scores = localScores[matchId]
+    await updateScore(matchId, scores.scoreA, scores.scoreB)
+    setEditingMatches(prev => ({ ...prev, [matchId]: false }))
+  }
 
-              {roundMatches.map((match: any) => (
+  return (
+    <div className="flex gap-16 items-center p-10">
+      {roundKeys.map((round, index) => {
+        const isFinal = index === roundKeys.length - 1
+        const roundMatches = rounds[round].sort((a: any, b: any) => a.position - b.position)
+        
+        return (
+          <div key={round} className="flex flex-col justify-center space-y-20 relative h-full">
+            <div className="absolute -top-16 left-0 w-full text-center">
+              <span className="text-sm font-black uppercase tracking-[0.4em] text-slate-500">
+                {isFinal ? '🏆 Grande Final' : `Fase ${round}`}
+              </span>
+            </div>
+
+            {roundMatches.map((match: any) => {
+              const isFinished = match.status === 'FINISHED'
+              const isBeingEdited = editingMatches[match.id] || !isFinished
+
+              return (
                 <div key={match.id} className="relative flex items-center">
-                  
-                  {/* CARD DO JOGO */}
+                  {/* CARD - Ajustado para w-80 */}
                   <div className={`
-                    w-72 flex flex-col rounded-xl overflow-hidden border-2 transition-all duration-300 relative z-10
-                    ${match.status === 'FINISHED' ? 'border-emerald-500/50 shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)]' : 'border-slate-700 bg-slate-800'}
-                    ${match.status === 'PENDING' ? 'opacity-60 grayscale' : 'opacity-100'}
+                    w-80 flex flex-col rounded-3xl overflow-hidden border-2 transition-all duration-300 shadow-2xl
+                    ${isFinished ? 'border-emerald-500 bg-slate-900' : 'border-slate-700 bg-slate-800'}
                   `}>
                     
-                    {/* Header */}
-                    <div className="bg-slate-900/50 px-3 py-1.5 flex justify-between items-center border-b border-slate-700/50">
-                        <span className="text-[9px] font-bold text-slate-500">JOGO #{match.position + 1}</span>
-                        {match.status === 'FINISHED' && <Trophy size={10} className="text-emerald-400" />}
+                    <div className="bg-slate-950/50 px-5 py-3 flex justify-between items-center border-b border-slate-700/50">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Partida #{match.position + 1}</span>
+                        {isFinished && <Trophy size={16} className="text-emerald-400" />}
                     </div>
 
-                    {/* Time A */}
-                    <div className={`
-                      flex justify-between items-center px-4 py-3 border-b border-slate-700/50
-                      ${match.winnerId === match.teamAId && match.winnerId ? 'bg-emerald-900/20' : 'bg-slate-800'}
-                    `}>
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <div className={`w-1 h-8 rounded-full ${match.winnerId === match.teamAId ? 'bg-emerald-500' : 'bg-slate-600'}`}></div>
-                        <span className={`text-xs font-bold truncate max-w-[140px] ${match.teamA ? 'text-slate-100' : 'text-slate-500 italic'}`}>
-                          {match.teamA?.name || 'A definir'}
-                        </span>
+                    {/* TIME A - Nome ajustado para text-lg */}
+                    <div className="flex justify-between items-center px-6 py-6 border-b border-slate-700/50">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className={`text-[9px] font-black uppercase mb-1 tracking-tighter ${match.winnerId === match.teamAId ? 'text-emerald-400' : 'text-slate-500'}`}>Dupla A</span>
+                        <span className="text-lg font-black text-white truncate pr-4 leading-tight">{match.teamA?.name || 'Aguardando...'}</span>
                       </div>
-                      
-                      {isAdmin ? (
-                        <input 
-                          type="number"
-                          value={scores[match.id]?.scoreA ?? 0}
-                          onChange={(e) => handleChange(match.id, 'scoreA', e.target.value)}
-                          onBlur={(e) => handleBlur(match.id, Number(e.target.value), scores[match.id]?.scoreB)}
-                          className="w-10 h-8 text-center bg-slate-900 rounded-lg border border-slate-700 font-mono text-sm font-bold text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
-                        />
-                      ) : (
-                        <span className={`font-mono text-lg font-bold ${match.winnerId === match.teamAId ? 'text-emerald-400' : 'text-slate-400'}`}>
-                          {match.scoreA}
-                        </span>
-                      )}
+                      <input 
+                        type="number"
+                        disabled={!isAdmin || (isFinished && !isBeingEdited)}
+                        value={localScores[match.id]?.scoreA ?? 0}
+                        onChange={(event) => handleInputChange(match.id, 'scoreA', event.target.value)}
+                        className={`w-14 h-14 text-center rounded-xl border-2 text-2xl font-black transition-all outline-none
+                          ${isFinished && !isBeingEdited ? 'bg-slate-950 border-transparent text-emerald-400' : 'bg-slate-700 border-slate-600 text-white focus:border-indigo-500'}
+                        `}
+                      />
                     </div>
 
-                    {/* Time B */}
-                    <div className={`
-                      flex justify-between items-center px-4 py-3
-                      ${match.winnerId === match.teamBId && match.winnerId ? 'bg-emerald-900/20' : 'bg-slate-800'}
-                    `}>
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <div className={`w-1 h-8 rounded-full ${match.winnerId === match.teamBId ? 'bg-emerald-500' : 'bg-slate-600'}`}></div>
-                        <span className={`text-xs font-bold truncate max-w-[140px] ${match.teamB ? 'text-slate-100' : 'text-slate-500 italic'}`}>
-                          {match.teamB?.name || 'A definir'}
-                        </span>
+                    {/* TIME B - Nome ajustado para text-lg */}
+                    <div className="flex justify-between items-center px-6 py-6 border-b border-slate-700/50">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className={`text-[9px] font-black uppercase mb-1 tracking-tighter ${match.winnerId === match.teamBId ? 'text-emerald-400' : 'text-slate-500'}`}>Dupla B</span>
+                        <span className="text-lg font-black text-white truncate pr-4 leading-tight">{match.teamB?.name || 'Aguardando...'}</span>
                       </div>
-
-                      {isAdmin ? (
-                        <input 
-                          type="number"
-                          value={scores[match.id]?.scoreB ?? 0}
-                          onChange={(e) => handleChange(match.id, 'scoreB', e.target.value)}
-                          onBlur={(e) => handleBlur(match.id, scores[match.id]?.scoreA, Number(e.target.value))}
-                          className="w-10 h-8 text-center bg-slate-900 rounded-lg border border-slate-700 font-mono text-sm font-bold text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
-                        />
-                      ) : (
-                        <span className={`font-mono text-lg font-bold ${match.winnerId === match.teamBId ? 'text-emerald-400' : 'text-slate-400'}`}>
-                          {match.scoreB}
-                        </span>
-                      )}
+                      <input 
+                        type="number"
+                        disabled={!isAdmin || (isFinished && !isBeingEdited)}
+                        value={localScores[match.id]?.scoreB ?? 0}
+                        onChange={(event) => handleInputChange(match.id, 'scoreB', event.target.value)}
+                        className={`w-14 h-14 text-center rounded-xl border-2 text-2xl font-black transition-all outline-none
+                          ${isFinished && !isBeingEdited ? 'bg-slate-950 border-transparent text-emerald-400' : 'bg-slate-700 border-slate-600 text-white focus:border-indigo-500'}
+                        `}
+                      />
                     </div>
+
+                    {/* BOTÕES */}
+                    {isAdmin && (
+                      <div className="p-3 bg-slate-950/30">
+                        {isFinished && !isBeingEdited ? (
+                          <button 
+                            onClick={() => setEditingMatches(prev => ({ ...prev, [match.id]: true }))}
+                            className="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                          >
+                            <Edit3 size={12} /> Editar Resultado
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleConfirmResult(match.id)}
+                            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/20 transition-all"
+                          >
+                            <CheckCircle size={12} /> Confirmar Placar
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* LINHAS CONECTORAS (Direita para Esquerda) */}
+                  {/* CONECTORES - Ajustados para a nova largura de card */}
                   {!isFinal && (
                     <>
-                      {/* Linha Horizontal saindo do card para a direita */}
                       <div className="absolute -right-8 top-1/2 w-8 h-[2px] bg-slate-700 z-0"></div>
-                      
-                      {/* Conector Vertical (Braço) */}
-                      {/* Lógica: Pares descem, Ímpares sobem para encontrar o "pai" no meio */}
-                      <div className={`
-                        absolute -right-8 w-[2px] bg-slate-700 z-0
-                        ${match.position % 2 === 0 ? 'top-1/2 h-[calc(50%+20px)]' : 'bottom-1/2 h-[calc(50%+20px)]'}
-                        ${roundMatches.length === 1 ? 'hidden' : ''} 
-                      `}></div>
-                      
-                      {/* Cotovelo para a próxima rodada */}
-                      <div className={`
-                         absolute -right-16 w-8 h-[2px] bg-slate-700
-                         ${match.position % 2 === 0 ? 'top-[calc(100%+20px)]' : 'bottom-[calc(100%+20px)]'}
-                         ${roundMatches.length === 1 ? 'hidden' : ''}
-                      `}></div>
+                      <div className={`absolute -right-8 w-[2px] bg-slate-700 z-0 ${match.position % 2 === 0 ? 'top-1/2 h-[calc(50%+40px)]' : 'bottom-1/2 h-[calc(50%+40px)]'} ${roundMatches.length === 1 ? 'hidden' : ''}`}></div>
+                      <div className={`absolute -right-16 w-8 h-[2px] bg-slate-700 ${match.position % 2 === 0 ? 'top-[calc(100%+40px)]' : 'bottom-[calc(100%+40px)]'} ${roundMatches.length === 1 ? 'hidden' : ''}`}></div>
                     </>
                   )}
                 </div>
-              ))}
-            </div>
-          )
-        })}
-      </div>
+              )
+            })}
+          </div>
+        )
+      })}
     </div>
   )
 }

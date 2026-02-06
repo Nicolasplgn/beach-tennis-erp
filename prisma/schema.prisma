@@ -9,82 +9,93 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
-  name      String?
   email     String   @unique
-  password  String?
   leagues   League[]
-  createdAt DateTime @default(now())
 }
 
 model League {
+  id          String       @id @default(cuid())
+  name        String
+  adminId     String
+  admin       User         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  players     Player[]     // Base Master de Atletas
+  tournaments Tournament[] 
+  createdAt   DateTime     @default(now())
+}
+
+model Tournament {
   id          String    @id @default(cuid())
   name        String
-  description String?
-  logo        String?
-  startDate   DateTime?
-  endDate     DateTime?
+  date        DateTime
   status      String    @default("DRAFT")
-  adminId     String
-  admin       User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  players     Player[]
+  format      String    @default("KNOCKOUT")
+  leagueId    String
+  league      League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  
+  // ATENÇÃO: Atletas confirmados NESTE torneio
+  participants Player[]  @relation("TournamentParticipants")
+  
   teams       Team[]
   matches     Match[]
-  createdAt   DateTime  @default(now())
 }
 
 model Player {
-  id       String  @id @default(cuid())
-  name     String
-  nickname String?
-  level    String?
-  leagueId String
-  league   League  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  teams    Team[]  @relation("PlayerTeams")
+  id        String   @id @default(cuid())
+  name      String
+  nickname  String?
+  level     String?  // Agora aceita D, C, B, A, PRO
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   
-  wins     Int     @default(0)
-  losses   Int     @default(0)
-  gamesWon Int     @default(0)
-  createdAt DateTime @default(now())
+  // Relação com torneios
+  tournaments Tournament[] @relation("TournamentParticipants")
+  teams       Team[]       @relation("PlayerTeams")
+  
+  points    Int      @default(0)
+  wins      Int      @default(0)
+  matches   Int      @default(0)
 }
 
+
 model Team {
-  id          String   @id @default(cuid())
-  name        String
-  leagueId    String
-  league      League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  players     Player[] @relation("PlayerTeams")
+  id           String     @id @default(cuid())
+  name         String
+  group        String?    // A, B (Para fase de grupos)
   
-  // --- AQUI ESTAVA O ERRO ANTES, AGORA ESTÁ CORRIGIDO ---
-  matchesA    Match[]  @relation("TeamA")
-  matchesB    Match[]  @relation("TeamB")
-  wonMatches  Match[]  @relation("Winner")
-  createdAt   DateTime @default(now())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  
+  players      Player[]   @relation("PlayerTeams")
+  
+  matchesA     Match[]    @relation("TeamA")
+  matchesB     Match[]    @relation("TeamB")
+  wonMatches   Match[]    @relation("Winner")
 }
 
 model Match {
-  id          String   @id @default(cuid())
-  leagueId    String
-  league      League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   
-  round       Int
-  position    Int
+  type         String     @default("KNOCKOUT") // KNOCKOUT, GROUP_STAGE
+  round        Int        // Na fase de grupos, representa a "Rodada 1, 2, 3"
+  position     Int
+  group        String?    // A ou B (Se for fase de grupos)
   
-  // --- REMOVIDO O @unique DAQUI ---
-  nextMatchId String?  
-  nextMatch   Match?   @relation("NextMatch", fields: [nextMatchId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  prevMatches Match[]  @relation("NextMatch")
+  nextMatchId  String?    
+  nextMatch    Match?     @relation("NextMatch", fields: [nextMatchId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  prevMatches  Match[]    @relation("NextMatch")
 
-  teamAId     String?
-  teamA       Team?    @relation("TeamA", fields: [teamAId], references: [id])
+  teamAId      String?
+  teamA        Team?      @relation("TeamA", fields: [teamAId], references: [id])
   
-  teamBId     String?
-  teamB       Team?    @relation("TeamB", fields: [teamBId], references: [id])
+  teamBId      String?
+  teamB        Team?      @relation("TeamB", fields: [teamBId], references: [id])
   
-  winnerId    String?
-  winner      Team?    @relation("Winner", fields: [winnerId], references: [id])
+  winnerId     String?
+  winner       Team?      @relation("Winner", fields: [winnerId], references: [id])
 
-  scoreA      Int?     @default(0)
-  scoreB      Int?     @default(0)
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
+  scoreA       Int?       @default(0)
+  scoreB       Int?       @default(0)
+  status       String     @default("PENDING")
 }

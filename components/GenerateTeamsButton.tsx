@@ -2,15 +2,16 @@
 
 import { generateTeams } from '@/app/actions'
 import { Dices, Loader2 } from 'lucide-react'
-import { useState, useTransition } from 'react'
+import { useTransition } from 'react'
 
 interface Props {
-  leagueId: string
+  // CORREÇÃO: Recebe tournamentId ao invés de leagueId
+  tournamentId: string 
   hasExistingTeams: boolean
   playersCount: number
 }
 
-export default function GenerateTeamsButton({ leagueId, hasExistingTeams, playersCount }: Props) {
+export default function GenerateTeamsButton({ tournamentId, hasExistingTeams, playersCount }: Props) {
   const [isPending, startTransition] = useTransition()
 
   const handleClick = () => {
@@ -24,7 +25,8 @@ export default function GenerateTeamsButton({ leagueId, hasExistingTeams, player
       }
     }
     startTransition(() => {
-      generateTeams(leagueId)
+      // CORREÇÃO: Passa apenas o tournamentId
+      generateTeams(tournamentId)
     })
   }
 
@@ -32,7 +34,7 @@ export default function GenerateTeamsButton({ leagueId, hasExistingTeams, player
     <button
       onClick={handleClick}
       disabled={isPending || playersCount < 4}
-      className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-linear-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 transition-all"
+      className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 transition-all"
     >
       {isPending ? (
         <Loader2 className="w-5 h-5 animate-spin" />

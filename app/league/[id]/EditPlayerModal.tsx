@@ -62,7 +62,7 @@ export default function EditPlayerModal({ player, leagueId, onClose }: EditPlaye
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 flex items-center justify-between">
+        <div className="bg-linear-to-r from-indigo-600 to-violet-600 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-lg">
               <User className="w-5 h-5 text-white" />
@@ -143,7 +143,7 @@ export default function EditPlayerModal({ player, leagueId, onClose }: EditPlaye
             <button
               type="submit"
               disabled={isSubmitting || !name.trim()}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg"
+              className="flex-1 px-4 py-3 bg-linear-to-r from-indigo-600 to-violet-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg"
             >
               {isSubmitting ? (
                 <>
