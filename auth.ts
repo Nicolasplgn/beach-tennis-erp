@@ -21,11 +21,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user = await prisma.user.create({
             data: {
               email: credentials.email as string,
-              name: "Organizador"
+            
             }
           })
         }
-        return { id: user.id, email: user.email, name: user.name }
+        return { id: user.id, email: user.email, }
       }
     })
   ],
