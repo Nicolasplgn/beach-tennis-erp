@@ -19,10 +19,11 @@ model User {
 model League {
   id          String    @id @default(cuid())
   name        String
-  description String?   // Requisito 2.1
-  logo        String?   // Requisito 2.1 (URL da imagem)
-  startDate   DateTime? // Requisito 2.1
-  status      String    @default("DRAFT") // DRAFT, IN_PROGRESS, FINISHED
+  description String?
+  logo        String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String    @default("DRAFT")
   adminId     String
   admin       User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
   players     Player[]
@@ -34,46 +35,56 @@ model League {
 model Player {
   id       String  @id @default(cuid())
   name     String
-  nickname String? // Requisito 3.1
-  level    String? // iniciante, intermediário, avançado
+  nickname String?
+  level    String?
   leagueId String
   league   League  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   teams    Team[]  @relation("PlayerTeams")
   
-  // Estatísticas (Requisito 8.1)
   wins     Int     @default(0)
   losses   Int     @default(0)
   gamesWon Int     @default(0)
+  createdAt DateTime @default(now())
 }
 
 model Team {
-  id        String   @id @default(cuid())
-  name      String
-  leagueId  String
-  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  players   Player[] @relation("PlayerTeams")
-  matchesA  Match[]  @relation("TeamA")
-  matchesB  Match[]  @relation("TeamB")
-  wonMatches Match[] @relation("Winner")
+  id          String   @id @default(cuid())
+  name        String
+  leagueId    String
+  league      League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  players     Player[] @relation("PlayerTeams")
+  
+  // --- AQUI ESTAVA O ERRO ANTES, AGORA ESTÁ CORRIGIDO ---
+  matchesA    Match[]  @relation("TeamA")
+  matchesB    Match[]  @relation("TeamB")
+  wonMatches  Match[]  @relation("Winner")
+  createdAt   DateTime @default(now())
 }
 
 model Match {
   id          String   @id @default(cuid())
   leagueId    String
   league      League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  round       Int      // 1=Final, 2=Semi, 3=Quartas...
+  
+  round       Int
   position    Int
-  nextMatchId String?
+  
+  // --- REMOVIDO O @unique DAQUI ---
+  nextMatchId String?  
   nextMatch   Match?   @relation("NextMatch", fields: [nextMatchId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   prevMatches Match[]  @relation("NextMatch")
+
   teamAId     String?
   teamA       Team?    @relation("TeamA", fields: [teamAId], references: [id])
+  
   teamBId     String?
   teamB       Team?    @relation("TeamB", fields: [teamBId], references: [id])
+  
   winnerId    String?
   winner      Team?    @relation("Winner", fields: [winnerId], references: [id])
+
   scoreA      Int?     @default(0)
   scoreB      Int?     @default(0)
-  status      String   @default("PENDING") // PENDING, PLAYING, FINISHED
+  status      String   @default("PENDING")
   createdAt   DateTime @default(now())
 }

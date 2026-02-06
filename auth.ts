@@ -11,7 +11,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Senha", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        if (!credentials?.email) return null
         
         let user = await prisma.user.findUnique({
           where: { email: credentials.email as string }
@@ -21,27 +21,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user = await prisma.user.create({
             data: {
               email: credentials.email as string,
-              password: credentials.password as string, // Em produção, use bcrypt
               name: "Organizador"
             }
           })
         }
-
         return { id: user.id, email: user.email, name: user.name }
       }
     })
   ],
-  pages: {
-    signIn: "/login",
-  },
+  pages: { signIn: "/login" },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const isOnDashboard = nextUrl.pathname === "/" || nextUrl.pathname.startsWith("/league")
-      if (isOnDashboard) {
-        if (isLoggedIn) return true
-        return false // Redireciona para login
-      }
+      if (isOnDashboard) return isLoggedIn
       return true
     },
     session({ session, token }) {
