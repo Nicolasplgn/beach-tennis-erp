@@ -58,7 +58,11 @@ export async function updatePlayer(playerId: string, leagueId: string, formData:
   const nickname = formData.get('nickname') as string
   const level = formData.get('level') as string
   const points = parseInt(formData.get('points') as string) || 0
-  await prisma.player.update({ where: { id: playerId }, data: { name, nickname, level, points } })
+
+  await prisma.player.update({
+    where: { id: playerId },
+    data: { name, nickname, level, points }
+  })
   revalidatePath(`/league/${leagueId}`)
 }
 
@@ -205,59 +209,28 @@ export async function generateBracket(tournamentId: string, format: 'KNOCKOUT' |
 }
 
 export async function updateScore(matchId: string, scoreA: number, scoreB: number) {
-  // 1. AQUI ESTAVA O ERRO: Adicionamos o include de teamA e teamB
   const match = await prisma.match.findUnique({
     where: { id: matchId },
-    include: { 
-        tournament: true,
-        teamA: { include: { players: true } }, // Traz os jogadores do time A
-        teamB: { include: { players: true } }  // Traz os jogadores do time B
-    }
+    include: { tournament: true }
   })
   
   if (!match) return
 
   let winnerId: string | null = null
-  
-  // Lógica de Vitória
   if (scoreA > scoreB) winnerId = match.teamAId
   else if (scoreB > scoreA) winnerId = match.teamBId
 
-  await prisma.$transaction(async (tx) => {
-    // Atualiza Placar
-    await tx.match.update({ 
-        where: { id: matchId }, 
-        data: { scoreA, scoreB, status: "FINISHED", winnerId } 
-    })
-    
-    // Atualiza Ranking na Liga
-    if (winnerId) {
-        // Agora o TypeScript não vai reclamar, porque pedimos teamA e teamB lá em cima
-        const winPl = winnerId === match.teamAId ? match.teamA?.players : match.teamB?.players
-        const losPl = winnerId === match.teamAId ? match.teamB?.players : match.teamA?.players
-        
-        // @ts-ignore
-        if (winPl) {
-            for (const p of winPl) {
-                await tx.player.update({ 
-                    where: { id: p.id }, 
-                    data: { points: { increment: 100 }, wins: { increment: 1 }, matches: { increment: 1 } } 
-                })
-            }
-        }
-        // @ts-ignore
-        if (losPl) {
-            for (const p of losPl) {
-                await tx.player.update({ 
-                    where: { id: p.id }, 
-                    data: { points: { increment: 10 }, matches: { increment: 1 } } 
-                })
-            }
-        }
-    }
+  const isFinished = !!winnerId
 
-    // Avanço no Mata-Mata
-    if (match.type === 'KNOCKOUT' && winnerId && match.nextMatchId) {
+  await prisma.$transaction(async (tx) => {
+    // APENAS atualiza o jogo. NÃO mexemos mais na tabela de Players/Ranking aqui.
+    await tx.match.update({
+      where: { id: matchId },
+      data: { scoreA, scoreB, status: isFinished ? "FINISHED" : "PLAYING", winnerId }
+    })
+
+    // Apenas avanço lógico do Mata-Mata
+    if (match.type === 'KNOCKOUT' && isFinished && winnerId && match.nextMatchId) {
       const isNextA = match.position % 2 === 0
       const updateData = isNextA ? { teamAId: winnerId } : { teamBId: winnerId }
       await tx.match.update({ where: { id: match.nextMatchId }, data: updateData })
@@ -265,7 +238,6 @@ export async function updateScore(matchId: string, scoreA: number, scoreB: numbe
   })
   
   revalidatePath(`/tournament/${match.tournamentId}`)
-  // O ranking fica na tela da liga, então atualizamos ela também
   revalidatePath(`/league/${match.tournament.leagueId}`)
 }
 

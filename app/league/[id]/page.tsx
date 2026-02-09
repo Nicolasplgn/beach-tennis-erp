@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { deleteTournament } from '@/app/actions'
 import { CreateTournamentModal } from '@/app/components/CreateTournamentModal'
-import { AddPlayerModal } from '@/app/components/AddPlayerModal' // Import novo
-import { Trophy, Calendar, ArrowRight, Trash2, ArrowLeft, Medal, Users, LayoutDashboard, Plus } from 'lucide-react'
+import { AddPlayerModal } from '@/app/components/AddPlayerModal'
+import { RankingRow } from './RankingRow' // <- Adicione este import
+import { Trophy, Calendar, ArrowRight, Trash2, ArrowLeft, Medal, Users, LayoutDashboard } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
@@ -48,42 +49,24 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                             <Trophy className="text-yellow-500" size={24}/> Ranking
                         </h2>
                         
-                        {/* AQUI FICA O BOTÃO NOVO */}
                         <AddPlayerModal leagueId={league.id} />
                     </div>
                     
-                    {/* LISTA DO RANKING */}
-                    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+                    {/* LISTA DO RANKING CORRIGIDA */}
+                    <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                         {league.players.map((player, index) => (
-                            <div key={player.id} className="flex justify-between items-center p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group">
-                                <div className="flex items-center gap-3">
-                                    {/* Medalha/Posição */}
-                                    <div className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-black ${index === 0 ? 'bg-yellow-100 text-yellow-700' : index === 1 ? 'bg-slate-100 text-slate-600' : index === 2 ? 'bg-orange-100 text-orange-800' : 'bg-white border border-slate-100 text-slate-400'}`}>
-                                        {index + 1}
-                                    </div>
-                                    
-                                    {/* Nome e Categoria */}
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{player.name}</p>
-                                        <div className="flex items-center gap-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Cat. {player.level}</p>
-                                            {player.nickname && <p className="text-[10px] text-indigo-400">({player.nickname})</p>}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                {/* Pontos */}
-                                <div className="text-right">
-                                    <span className="block font-black text-indigo-600 text-sm leading-none">{player.points}</span>
-                                    <span className="text-[9px] font-bold text-slate-300 uppercase">PTS</span>
-                                </div>
-                            </div>
+                            <RankingRow 
+                                key={player.id} 
+                                player={player} 
+                                index={index} 
+                                leagueId={league.id} 
+                            />
                         ))}
+                        
                         {league.players.length === 0 && (
-                            <div className="text-center py-12 text-slate-400 flex flex-col items-center">
-                                <Users size={32} className="opacity-20 mb-2"/>
-                                <p className="text-xs font-medium">Lista vazia.</p>
-                                <p className="text-[10px]">Clique no + para adicionar.</p>
+                            <div className="text-center py-20 opacity-20">
+                                <Users size={64} className="mx-auto mb-4"/>
+                                <p className="font-black uppercase tracking-widest">Nenhum atleta inscrito</p>
                             </div>
                         )}
                     </div>
@@ -97,7 +80,6 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                         <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
                             <Calendar className="text-indigo-500" size={24}/> Torneios da Liga
                         </h2>
-                        {/* Botão Modal para criar torneio */}
                         <CreateTournamentModal leagueId={league.id} />
                     </div>
 
