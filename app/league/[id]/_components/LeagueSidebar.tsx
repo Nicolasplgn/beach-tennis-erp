@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { Users, Trophy, Search, Medal, Pencil, Trash2 } from 'lucide-react'
-import { AddPlayerModal } from '@/components/AddPlayerModal'
-import EditPlayerModal from '@/components/EditPlayerModal'
+// CORREÇÃO AQUI: Adicionado '/app' no caminho dos imports
+import { AddPlayerModal } from '@/app/components/AddPlayerModal'
+import EditPlayerModal from '@/app/components/EditPlayerModal'
 import { deletePlayer } from '@/app/actions'
 
-// ... (Tipos e funções auxiliares mantidas iguais ao anterior) ...
 type Player = {
   id: string
   name: string
@@ -59,27 +59,24 @@ export function LeagueSidebar({ players, leagueId }: { players: Player[], league
   }
 
   return (
-    // CORREÇÃO: rounded-4xl
-    <div className="bg-white rounded-4xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden h-fit flex flex-col max-h-[850px]">
+    <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden h-fit flex flex-col max-h-[850px]">
       
       {/* HEADER + ABAS */}
       <div className="bg-slate-50/50 border-b border-slate-100">
         <div className="flex p-1 gap-1 m-2 bg-slate-100 rounded-xl">
             <button 
                 onClick={() => setActiveTab('players')}
-                className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${activeTab === 'players' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'players' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
             >
                 <Users size={14}/> Atletas
             </button>
 
-            {hasRanking && (
-                <button 
-                    onClick={() => setActiveTab('ranking')}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${activeTab === 'ranking' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                    <Trophy size={14}/> Ranking
-                </button>
-            )}
+            <button 
+                onClick={() => setActiveTab('ranking')}
+                className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'ranking' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+                <Trophy size={14}/> Ranking
+            </button>
         </div>
 
         <div className="px-4 pb-4 pt-2 flex gap-2">
@@ -93,6 +90,7 @@ export function LeagueSidebar({ players, leagueId }: { players: Player[], league
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
+            {/* Componente Modal de Adicionar */}
             <AddPlayerModal leagueId={leagueId} />
         </div>
       </div>
@@ -123,8 +121,8 @@ export function LeagueSidebar({ players, leagueId }: { players: Player[], league
                             </div>
 
                             <div className="absolute right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm p-1 rounded-lg shadow-sm border border-slate-100">
-                                <button onClick={() => setEditingPlayer(player)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"><Pencil size={14} /></button>
-                                <button onClick={() => handleDelete(player.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"><Trash2 size={14} /></button>
+                                <button onClick={() => setEditingPlayer(player)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors cursor-pointer"><Pencil size={14} /></button>
+                                <button onClick={() => handleDelete(player.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"><Trash2 size={14} /></button>
                             </div>
                         </div>
                     )
