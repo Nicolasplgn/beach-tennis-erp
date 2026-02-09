@@ -6,18 +6,15 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 // --- AUTH ---
-export async function loginAction(formData: FormData) {
-  await signIn("credentials", formData)
-}
-export async function logoutAction() {
-  await signOut({ redirectTo: "/login" })
-}
+export async function loginAction(formData: FormData) { await signIn("credentials", formData) }
+export async function logoutAction() { await signOut({ redirectTo: "/login" }) }
 
 // --- LIGAS ---
 export async function createLeague(formData: FormData) {
   const session = await auth()
   if (!session?.user?.id) return
   const name = formData.get('name') as string
+  if (!name) return
   const league = await prisma.league.create({ data: { name, adminId: session.user.id } })
   revalidatePath('/')
   redirect(`/league/${league.id}`)
@@ -56,19 +53,6 @@ export async function addPlayer(leagueId: string, formData: FormData) {
   revalidatePath(`/league/${leagueId}`)
 }
 
-export async function togglePlayerInTournament(tournamentId: string, playerId: string) {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    include: { participants: { where: { id: playerId } } }
-  })
-  if (tournament?.participants.length) {
-    await prisma.tournament.update({ where: { id: tournamentId }, data: { participants: { disconnect: { id: playerId } } } })
-  } else {
-    await prisma.tournament.update({ where: { id: tournamentId }, data: { participants: { connect: { id: playerId } } } })
-  }
-  revalidatePath(`/tournament/${tournamentId}`)
-}
-
 export async function updatePlayer(playerId: string, leagueId: string, formData: FormData) {
   const name = formData.get('name') as string
   const nickname = formData.get('nickname') as string
@@ -83,7 +67,19 @@ export async function deletePlayer(playerId: string, leagueId: string) {
   revalidatePath(`/league/${leagueId}`)
 }
 
-// --- SORTEIO E CHAVEAMENTO ---
+export async function togglePlayerInTournament(tournamentId: string, playerId: string) {
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId }, include: { participants: { where: { id: playerId } } }
+  })
+  if (tournament?.participants.length) {
+    await prisma.tournament.update({ where: { id: tournamentId }, data: { participants: { disconnect: { id: playerId } } } })
+  } else {
+    await prisma.tournament.update({ where: { id: tournamentId }, data: { participants: { connect: { id: playerId } } } })
+  }
+  revalidatePath(`/tournament/${tournamentId}`)
+}
+
+// --- SORTEIO ---
 export async function generateTeams(tournamentId: string) {
   const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId }, include: { participants: true } })
   if (!tournament || tournament.participants.length < 4) return
@@ -104,39 +100,90 @@ export async function generateTeams(tournamentId: string) {
   revalidatePath(`/tournament/${tournamentId}`)
 }
 
+// --- CHAVEAMENTO CORRIGIDO (LÓGICA INTERCALADA) ---
 export async function generateBracket(tournamentId: string, format: 'KNOCKOUT' | 'GROUPS') {
   const teams = await prisma.team.findMany({ where: { tournamentId } })
   if (teams.length < 2) return
+
   await prisma.$transaction(async (tx) => {
     await tx.match.deleteMany({ where: { tournamentId } })
     await tx.tournament.update({ where: { id: tournamentId }, data: { status: 'ACTIVE', format } })
+
     if (format === 'GROUPS') {
         const shuffled = [...teams].sort(() => Math.random() - 0.5)
         const half = Math.ceil(shuffled.length / 2)
-        const gA = shuffled.slice(0, half); const gB = shuffled.slice(half)
+        const gA = shuffled.slice(0, half)
+        const gB = shuffled.slice(half)
+
+        // Definir grupos
         for (const t of gA) await tx.team.update({ where: { id: t.id }, data: { group: 'A' } })
         for (const t of gB) await tx.team.update({ where: { id: t.id }, data: { group: 'B' } })
-        const createRoundRobin = async (groupTeams: any[], groupName: string) => {
-            let count = 0
-            for (let i = 0; i < groupTeams.length; i++) {
-                for (let j = i + 1; j < groupTeams.length; j++) {
-                    count++
-                    await tx.match.create({ data: { tournamentId, type: 'GROUP_STAGE', group: groupName, round: 1, position: count, teamAId: groupTeams[i].id, teamBId: groupTeams[j].id, status: 'PENDING' } })
+
+        // Função para gerar jogos intercalados (Round Robin otimizado para Beach Tennis)
+        const createInterleavedMatches = async (groupTeams: any[], groupName: string) => {
+            let matchCount = 0
+            const matchesToCreate = []
+
+            // Se forem 4 times: (1,2,3,4)
+            // Ordem Beach Tennis Ideal (Descanso):
+            // 1. T1 vs T2
+            // 2. T3 vs T4
+            // 3. T1 vs T3
+            // 4. T2 vs T4
+            // 5. T1 vs T4
+            // 6. T2 vs T3
+            
+            if (groupTeams.length === 4) {
+                const [t1, t2, t3, t4] = groupTeams
+                matchesToCreate.push([t1, t2], [t3, t4], [t1, t3], [t2, t4], [t1, t4], [t2, t3])
+            } 
+            // Se forem 3 times: (1,2,3) -> 1x2, 1x3, 2x3 (Um joga seguido se não tiver pausa, mas é o melhor possível)
+            else if (groupTeams.length === 3) {
+                const [t1, t2, t3] = groupTeams
+                matchesToCreate.push([t1, t2], [t1, t3], [t2, t3])
+            }
+            // Fallback genérico para outros números
+            else {
+                for (let i = 0; i < groupTeams.length; i++) {
+                    for (let j = i + 1; j < groupTeams.length; j++) {
+                        matchesToCreate.push([groupTeams[i], groupTeams[j]])
+                    }
                 }
             }
+
+            for (const [teamA, teamB] of matchesToCreate) {
+                matchCount++
+                await tx.match.create({
+                    data: {
+                        tournamentId,
+                        type: 'GROUP_STAGE',
+                        group: groupName,
+                        round: 1,
+                        position: matchCount, // Importante para ordenação visual
+                        teamAId: teamA.id,
+                        teamBId: teamB.id,
+                        status: 'PENDING'
+                    }
+                })
+            }
         }
-        await createRoundRobin(gA, 'A'); await createRoundRobin(gB, 'B')
+
+        await createInterleavedMatches(gA, 'A')
+        await createInterleavedMatches(gB, 'B')
+
     } else {
-        const powerOfTwo = Math.pow(2, Math.ceil(Math.log2(teams.length)))
-        const totalRounds = Math.log2(powerOfTwo)
+        // Lógica Mata-Mata (mantida igual)
+        const p2 = Math.pow(2, Math.ceil(Math.log2(teams.length)))
+        const rounds = Math.log2(p2)
         const bracketSlots: (any | null)[] = [...teams].sort(() => Math.random() - 0.5)
-        while (bracketSlots.length < powerOfTwo) bracketSlots.push(null)
+        while (bracketSlots.length < p2) bracketSlots.push(null)
+        
         const createdMatches: Record<number, Record<number, string>> = {}
-        for (let r = totalRounds; r >= 1; r--) {
-          const nMatches = Math.pow(2, totalRounds - r)
+        for (let r = rounds; r >= 1; r--) {
+          const nMatches = Math.pow(2, rounds - r)
           createdMatches[r] = {}
           for (let pos = 0; pos < nMatches; pos++) {
-            const nextId = r < totalRounds ? createdMatches[r + 1][Math.floor(pos / 2)] : undefined
+            const nextId = r < rounds ? createdMatches[r + 1][Math.floor(pos / 2)] : undefined
             let tAId = undefined, tBId = undefined, status = "PENDING", winnerId = undefined
             if (r === 1) {
               const tA = bracketSlots[pos * 2]; const tB = bracketSlots[pos * 2 + 1]
@@ -153,26 +200,76 @@ export async function generateBracket(tournamentId: string, format: 'KNOCKOUT' |
           }
         }
     }
-  }, { timeout: 30000 })
+  }, { timeout: 20000 })
   revalidatePath(`/tournament/${tournamentId}`)
 }
 
 export async function updateScore(matchId: string, scoreA: number, scoreB: number) {
-  const match = await prisma.match.findUnique({ where: { id: matchId }, include: { tournament: true } })
+  // 1. AQUI ESTAVA O ERRO: Adicionamos o include de teamA e teamB
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: { 
+        tournament: true,
+        teamA: { include: { players: true } }, // Traz os jogadores do time A
+        teamB: { include: { players: true } }  // Traz os jogadores do time B
+    }
+  })
+  
   if (!match) return
+
   let winnerId: string | null = null
+  
+  // Lógica de Vitória
   if (scoreA > scoreB) winnerId = match.teamAId
   else if (scoreB > scoreA) winnerId = match.teamBId
+
   await prisma.$transaction(async (tx) => {
-    await tx.match.update({ where: { id: matchId }, data: { scoreA, scoreB, status: "FINISHED", winnerId } })
+    // Atualiza Placar
+    await tx.match.update({ 
+        where: { id: matchId }, 
+        data: { scoreA, scoreB, status: "FINISHED", winnerId } 
+    })
+    
+    // Atualiza Ranking na Liga
+    if (winnerId) {
+        // Agora o TypeScript não vai reclamar, porque pedimos teamA e teamB lá em cima
+        const winPl = winnerId === match.teamAId ? match.teamA?.players : match.teamB?.players
+        const losPl = winnerId === match.teamAId ? match.teamB?.players : match.teamA?.players
+        
+        // @ts-ignore
+        if (winPl) {
+            for (const p of winPl) {
+                await tx.player.update({ 
+                    where: { id: p.id }, 
+                    data: { points: { increment: 100 }, wins: { increment: 1 }, matches: { increment: 1 } } 
+                })
+            }
+        }
+        // @ts-ignore
+        if (losPl) {
+            for (const p of losPl) {
+                await tx.player.update({ 
+                    where: { id: p.id }, 
+                    data: { points: { increment: 10 }, matches: { increment: 1 } } 
+                })
+            }
+        }
+    }
+
+    // Avanço no Mata-Mata
     if (match.type === 'KNOCKOUT' && winnerId && match.nextMatchId) {
       const isNextA = match.position % 2 === 0
       const updateData = isNextA ? { teamAId: winnerId } : { teamBId: winnerId }
       await tx.match.update({ where: { id: match.nextMatchId }, data: updateData })
     }
   })
+  
   revalidatePath(`/tournament/${match.tournamentId}`)
+  // O ranking fica na tela da liga, então atualizamos ela também
+  revalidatePath(`/league/${match.tournament.leagueId}`)
 }
+
+
 
 // --- FASE FINAL (SEMIS CRUZADAS COM CONFRONTO DIRETO) ---
 export async function generateFinalStage(tournamentId: string) {
@@ -226,6 +323,17 @@ export async function generateFinalStage(tournamentId: string) {
     const final = await tx.match.create({ data: { tournamentId, type: 'KNOCKOUT', round: 3, position: 0, status: 'PENDING' } })
     await tx.match.create({ data: { tournamentId, type: 'KNOCKOUT', round: 2, position: 0, teamAId: topA[0].id, teamBId: topB[1].id, nextMatchId: final.id, status: 'PENDING' } })
     await tx.match.create({ data: { tournamentId, type: 'KNOCKOUT', round: 2, position: 1, teamAId: topB[0].id, teamBId: topA[1].id, nextMatchId: final.id, status: 'PENDING' } })
+  })
+  revalidatePath(`/tournament/${tournamentId}`)
+
+  
+}
+
+export async function finishTournament(tournamentId: string) {
+  // Atualiza status para FINISHED
+  await prisma.tournament.update({
+    where: { id: tournamentId },
+    data: { status: 'FINISHED' }
   })
   revalidatePath(`/tournament/${tournamentId}`)
 }

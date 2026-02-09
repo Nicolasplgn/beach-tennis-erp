@@ -40,7 +40,7 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
   const handleScoreChange = (id: string, key: 'scoreA' | 'scoreB', value: string) => {
     let num = parseInt(value) || 0
     // TRAVA: Mínimo 0, Máximo 6
-    if (num > 6) num = 6
+    if (num > 7) num = 7
     if (num < 0) num = 0
     
     setLocalScores(prev => ({ 
@@ -90,7 +90,7 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
                                 <input 
                                     type="number" 
                                     min="0"
-                                    max="6"
+                                    max="7"
                                     disabled={!isAdmin || (isFin && !isEd)} 
                                     className={`w-16 h-16 text-4xl text-center font-black rounded-2xl border-2 transition-all outline-none ${isFin && !isEd ? 'bg-slate-900 border-transparent text-emerald-400' : 'bg-slate-800 border-slate-600 text-white focus:border-indigo-500'}`} 
                                     value={localScores[match.id]?.scoreA ?? match.scoreA} 
@@ -103,7 +103,7 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
                                 <input 
                                     type="number" 
                                     min="0"
-                                    max="6"
+                                    max="7"
                                     disabled={!isAdmin || (isFin && !isEd)} 
                                     className={`w-16 h-16 text-4xl text-center font-black rounded-2xl border-2 transition-all outline-none ${isFin && !isEd ? 'bg-slate-900 border-transparent text-emerald-400' : 'bg-slate-800 border-slate-600 text-white focus:border-indigo-500'}`} 
                                     value={localScores[match.id]?.scoreB ?? match.scoreB} 

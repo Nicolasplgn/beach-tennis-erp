@@ -27,7 +27,7 @@ export default function TournamentBracket({ matches, isAdmin }: { matches: any[]
   const handleInputChange = (id: string, field: 'scoreA' | 'scoreB', val: string) => {
     let num = parseInt(val) || 0
     // TRAVA: Mínimo 0, Máximo 6
-    if (num > 6) num = 6
+    if (num > 7) num = 7
     if (num < 0) num = 0
     
     setLocalScores(prev => ({ 
@@ -71,7 +71,7 @@ export default function TournamentBracket({ matches, isAdmin }: { matches: any[]
                             <input 
                                 type="number" 
                                 min="0"
-                                max="6"
+                                max="7"
                                 disabled={!isAdmin || (isFin && !isEd)} 
                                 value={localScores[match.id]?.[side.t === 'A' ? 'scoreA' : 'scoreB'] ?? 0} 
                                 onChange={(e) => handleInputChange(match.id, side.t === 'A' ? 'scoreA' : 'scoreB', e.target.value)} 
