@@ -46,7 +46,7 @@ export default async function Dashboard() {
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 mb-6"><Calendar size={14} /> Criada em {new Date(league.createdAt).toLocaleDateString()}</div>
                 <div className="flex gap-6 pt-4 border-t border-slate-50">
                   <div><div className="text-[10px] text-slate-400 font-bold uppercase mb-1">Ranking</div><div className="flex items-center gap-1.5 font-bold text-slate-700"><Users size={16} className="text-indigo-500"/> {league._count.players} <span className="text-[10px] text-slate-400 font-normal">Atletas</span></div></div>
-                  <div><div className="text-[10px] text-slate-400 font-bold uppercase mb-1">Etapas</div><div className="flex items-center gap-1.5 font-bold text-slate-700"><LayoutDashboard size={16} className="text-indigo-500"/> {league._count.tournaments}</div></div>
+                  <div><div className="text-[10px] text-slate-400 font-bold uppercase mb-1">Torneios</div><div className="flex items-center gap-1.5 font-bold text-slate-700"><LayoutDashboard size={16} className="text-indigo-500"/> {league._count.tournaments}</div></div>
                 </div>
               </Link>
             </div>
