@@ -47,7 +47,7 @@ export default async function Dashboard() {
         <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
           <div className="space-y-2">
             <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight">
-              Seus <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-violet-500">Circuitos</span>
+              Suas <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-violet-500">Ligas</span>
             </h1>
             <p className="text-slate-500 text-lg font-medium max-w-md">
               Gerencie ligas, rankings e torneios com a tecnologia que seu esporte merece.
