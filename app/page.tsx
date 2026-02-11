@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { deleteLeague, logoutAction } from './actions'
 import { CreateLeagueModal } from '@/app/components/CreateLeagueModal'
 import Link from 'next/link'
-import { Trophy, Users, Trash2, LogOut, LayoutDashboard, Calendar, ArrowRight } from 'lucide-react'
+import { Trophy, Trash2, LogOut, Calendar } from 'lucide-react'
 
 export default async function Dashboard() {
   const session = await auth()
@@ -47,7 +47,7 @@ export default async function Dashboard() {
         <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
           <div className="space-y-2">
             <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight">
-              Suas <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-violet-500">Ligas</span>
+              Seus <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-violet-500">Circuitos</span>
             </h1>
             <p className="text-slate-500 text-lg font-medium max-w-md">
               Gerencie ligas, rankings e torneios com a tecnologia que seu esporte merece.
@@ -102,10 +102,7 @@ export default async function Dashboard() {
                   </div>
                 </div>
 
-                {/* Botão flutuante que aparece no hover */}
-                <Link href={`/league/${league.id}`} className="absolute bottom-6 right-6 bg-slate-900 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg cursor-pointer">
-                    <ArrowRight size={20} />
-                </Link>
+                {/* REMOVI O BOTÃO FLUTUANTE DA FLECHA AQUI */}
               </div>
             </div>
           ))}
