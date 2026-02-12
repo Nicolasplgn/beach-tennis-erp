@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { updateScore, generateFinalStage } from '@/app/actions'
+import { updateScore, generateFinalStage } from '@/app/actions' // IMPORTADO AQUI
 import { CheckCircle, Edit3, Trophy } from 'lucide-react'
 
 export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
@@ -38,8 +38,10 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
   const [editingMatches, setEditingMatches] = useState<Record<string, boolean>>({})
 
   const handleScoreChange = (id: string, key: 'scoreA' | 'scoreB', value: string) => {
-    let num = parseInt(value) || 0
-    // TRAVA: Mínimo 0, Máximo 6
+    let num = parseInt(value)
+    if (isNaN(num)) num = 0
+    
+    // TRAVA 0 A 7
     if (num > 7) num = 7
     if (num < 0) num = 0
     
@@ -89,8 +91,7 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
                                 <p className="text-lg font-black text-slate-100 mb-4 truncate">{match.teamA?.name}</p>
                                 <input 
                                     type="number" 
-                                    min="0"
-                                    max="7"
+                                    min="0" max="7"
                                     disabled={!isAdmin || (isFin && !isEd)} 
                                     className={`w-16 h-16 text-4xl text-center font-black rounded-2xl border-2 transition-all outline-none ${isFin && !isEd ? 'bg-slate-900 border-transparent text-emerald-400' : 'bg-slate-800 border-slate-600 text-white focus:border-indigo-500'}`} 
                                     value={localScores[match.id]?.scoreA ?? match.scoreA} 
@@ -102,8 +103,7 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
                                 <p className="text-lg font-black text-slate-100 mb-4 truncate">{match.teamB?.name}</p>
                                 <input 
                                     type="number" 
-                                    min="0"
-                                    max="7"
+                                    min="0" max="7"
                                     disabled={!isAdmin || (isFin && !isEd)} 
                                     className={`w-16 h-16 text-4xl text-center font-black rounded-2xl border-2 transition-all outline-none ${isFin && !isEd ? 'bg-slate-900 border-transparent text-emerald-400' : 'bg-slate-800 border-slate-600 text-white focus:border-indigo-500'}`} 
                                     value={localScores[match.id]?.scoreB ?? match.scoreB} 
@@ -135,12 +135,12 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
         </div>
         {isAdmin && (
             <div className="flex justify-center pb-10">
-                <button 
-                    onClick={async () => { if(confirm("Deseja gerar as Semifinais Cruzadas?")) await generateFinalStage(tournamentId) }}
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl flex items-center gap-3 transition-all"
-                >
-                    <Trophy size={24} /> Iniciar Fase Final
-                </button>
+                {/* CORREÇÃO DO BOTÃO AQUI: Chamando a função importada diretamente */}
+                <form action={() => { if(confirm("Deseja gerar as Semifinais Cruzadas?")) generateFinalStage(tournamentId) }}>
+                    <button className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl flex items-center gap-3 transition-all cursor-pointer">
+                        <Trophy size={24} /> Iniciar Fase Final
+                    </button>
+                </form>
             </div>
         )}
     </div>
