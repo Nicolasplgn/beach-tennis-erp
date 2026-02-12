@@ -9,7 +9,7 @@ export function RankingRow({ player, index, leagueId }: any) {
   const [isEditOpen, setIsEditOpen] = useState(false)
 
   const handleDelete = async () => {
-    if (confirm("Excluir este atleta permanentemente?")) {
+    if (confirm("Tem certeza que deseja excluir este atleta permanentemente?")) {
       await deletePlayer(player.id, leagueId)
     }
   }
@@ -41,24 +41,25 @@ export function RankingRow({ player, index, leagueId }: any) {
           
           <div className="flex items-center gap-4">
               
-              {/* --- PONTOS (VISUAL CORRIGIDO) --- */}
+              {/* PONTOS */}
               <div className="text-right">
                   <span className="block font-black text-indigo-600 text-lg leading-none">{player.points}</span>
                   <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">PONTOS</span>
               </div>
-              {/* ---------------------------------- */}
               
-              {/* BOTÕES DE AÇÃO */}
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+              {/* BOTÕES DE AÇÃO (Visíveis no Hover ou Sempre) */}
+              <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all">
                   <button 
                     onClick={() => setIsEditOpen(true)}
                     className="p-2.5 bg-slate-100 text-slate-400 hover:bg-indigo-600 hover:text-white rounded-xl transition-all cursor-pointer shadow-sm"
+                    title="Editar"
                   >
                       <Pencil size={14}/>
                   </button>
                   <button 
                     onClick={handleDelete}
                     className="p-2.5 bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white rounded-xl transition-all cursor-pointer shadow-sm"
+                    title="Excluir"
                   >
                       <Trash2 size={14}/>
                   </button>
