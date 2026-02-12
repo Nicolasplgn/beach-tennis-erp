@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { updateScore, generateFinalStage } from '@/app/actions' // IMPORTADO AQUI
-import { CheckCircle, Edit3, Trophy } from 'lucide-react'
+import { updateScore } from '@/app/actions'
+import { CheckCircle, Edit3 } from 'lucide-react'
 
 export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
   const groupA = teams.filter((t: any) => t.group === 'A')
@@ -12,7 +12,7 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
 
   const calculateStandings = (grpMatches: any[], grpTeams: any[]) => {
     const std: Record<string, any> = {}
-    grpTeams.forEach(t => std[t.id] = { id: t.id, name: t.name, points: 0, wins: 0, balance: 0 })
+    grpTeams.forEach(t => std[t.id] = { id: t.id, name: t.name, wins: 0, balance: 0 })
     grpMatches.forEach(m => {
         if (m.status === 'FINISHED' && m.winnerId) {
             std[m.winnerId].wins += 1
@@ -40,15 +40,9 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
   const handleScoreChange = (id: string, key: 'scoreA' | 'scoreB', value: string) => {
     let num = parseInt(value)
     if (isNaN(num)) num = 0
-    
-    // TRAVA 0 A 7
     if (num > 7) num = 7
     if (num < 0) num = 0
-    
-    setLocalScores(prev => ({ 
-        ...prev, 
-        [id]: { ...prev[id], [key]: num } 
-    }))
+    setLocalScores(prev => ({ ...prev, [id]: { ...prev[id], [key]: num } }))
   }
 
   const handleConfirm = async (matchId: string) => {
@@ -88,7 +82,7 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
                     <div key={match.id} className="bg-slate-900/50 p-6 rounded-3xl border border-slate-700/50 flex flex-col gap-4">
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex-1 text-center min-w-0">
-                                <p className="text-lg font-black text-slate-100 mb-4 truncate">{match.teamA?.name}</p>
+                                <p className="text-sm font-black text-slate-100 mb-4 truncate">{match.teamA?.name}</p>
                                 <input 
                                     type="number" 
                                     min="0" max="7"
@@ -100,7 +94,7 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
                             </div>
                             <div className="text-slate-700 font-black text-xl italic pt-12">VS</div>
                             <div className="flex-1 text-center min-w-0">
-                                <p className="text-lg font-black text-slate-100 mb-4 truncate">{match.teamB?.name}</p>
+                                <p className="text-sm font-black text-slate-100 mb-4 truncate">{match.teamB?.name}</p>
                                 <input 
                                     type="number" 
                                     min="0" max="7"
@@ -114,9 +108,9 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
                         {isAdmin && (
                             <div className="mt-2">
                                 {isFin && !isEd ? (
-                                    <button onClick={() => setEditingMatches(prev => ({ ...prev, [match.id]: true }))} className="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"><Edit3 size={14} /> Editar Resultado</button>
+                                    <button onClick={() => setEditingMatches(prev => ({ ...prev, [match.id]: true }))} className="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"><Edit3 size={14} /> Editar</button>
                                 ) : (
-                                    <button onClick={() => handleConfirm(match.id)} className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/20 transition-all"><CheckCircle size={14} /> Confirmar Placar</button>
+                                    <button onClick={() => handleConfirm(match.id)} className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-all"><CheckCircle size={14} /> Confirmar</button>
                                 )}
                             </div>
                         )}
@@ -127,22 +121,14 @@ export function GroupStageView({ matches, teams, isAdmin, tournamentId }: any) {
     </div>
   )
 
+  // AQUI É A PARTE PRINCIPAL DA CORREÇÃO
   return (
     <div className="space-y-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 w-full p-4">
             {renderGroupContainer('A', standingsA, matchesA)}
             {renderGroupContainer('B', standingsB, matchesB)}
         </div>
-        {isAdmin && (
-            <div className="flex justify-center pb-10">
-                {/* CORREÇÃO DO BOTÃO AQUI: Chamando a função importada diretamente */}
-                <form action={() => { if(confirm("Deseja gerar as Semifinais Cruzadas?")) generateFinalStage(tournamentId) }}>
-                    <button className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl flex items-center gap-3 transition-all cursor-pointer">
-                        <Trophy size={24} /> Iniciar Fase Final
-                    </button>
-                </form>
-            </div>
-        )}
+        {/* REMOVI O BOTÃO DUPLICADO DESTE ARQUIVO */}
     </div>
   )
 }

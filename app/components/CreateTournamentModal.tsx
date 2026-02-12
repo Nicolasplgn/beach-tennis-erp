@@ -19,49 +19,60 @@ export function CreateTournamentModal({ leagueId }: { leagueId: string }) {
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className="bg-indigo-600 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 cursor-pointer"
+        className="bg-indigo-600 text-white px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 cursor-pointer"
       >
         <Plus size={18} /> Criar Torneio
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-black text-slate-900 flex items-center gap-2">
-                <Calendar className="text-indigo-600" size={20}/> Novo Torneio
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden relative animate-in zoom-in-95 duration-200 border border-slate-200">
+            
+            <div className="bg-slate-900 px-8 py-5 flex items-center justify-between">
+              <h3 className="text-white font-black flex items-center gap-3 uppercase italic tracking-wider">
+                <Calendar size={20} className="text-indigo-400"/> Novo Torneio
               </h3>
-              <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-all">
-                <X size={20} />
+              <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors cursor-pointer bg-white/10 p-2 rounded-full">
+                <X size={18} />
               </button>
             </div>
             
-            <form action={handleSubmit} className="p-6 space-y-4">
+            <form action={handleSubmit} className="p-8 space-y-6">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Nome do Torneio</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nome do Evento</label>
                     <input 
                         name="name" 
-                        placeholder="Ex: 1ª Etapa - Open" 
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                        placeholder="Ex: 1ª Etapa - Open de Verão" 
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-all"
                         autoFocus
                         required
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Data do Evento</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Data do Evento</label>
                     <input 
                         name="date" 
                         type="date"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none text-slate-600 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-all"
                         required
                     />
                 </div>
-                <button 
-                    disabled={loading}
-                    className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold uppercase tracking-wide hover:bg-indigo-600 transition-all flex justify-center items-center gap-2 disabled:opacity-70"
-                >
-                    {loading ? <Loader2 className="animate-spin"/> : 'Criar Torneio'}
-                </button>
+                
+                <div className="pt-2 flex gap-3">
+                    <button 
+                        type="button" 
+                        onClick={() => setIsOpen(false)}
+                        className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-400 border-2 border-transparent hover:bg-slate-50 hover:text-slate-600 transition-all cursor-pointer"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        disabled={loading}
+                        className="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex justify-center items-center gap-2 shadow-xl shadow-indigo-200 cursor-pointer disabled:opacity-70"
+                    >
+                        {loading ? <Loader2 className="animate-spin"/> : 'Criar Torneio'}
+                    </button>
+                </div>
             </form>
           </div>
         </div>
